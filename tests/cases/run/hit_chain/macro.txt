@@ -1,0 +1,3 @@
+Start -s=0
+Hit A 1 -d=1 -s=1
+Hit B 1 -l=1 -d=1

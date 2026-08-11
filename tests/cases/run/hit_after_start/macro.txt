@@ -1,0 +1,2 @@
+Start -s=0
+Hit A 1 -d=1

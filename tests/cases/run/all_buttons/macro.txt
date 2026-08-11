@@ -1,0 +1,2 @@
+# ボタン記号表の全網羅. SlはYと同じ値, tlはSt+Sl
+Press A,B,X,Y,Z,St,Sl,L,R,dU,dD,dL,dR,tl -d=1

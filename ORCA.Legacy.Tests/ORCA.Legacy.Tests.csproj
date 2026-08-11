@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!--
+    既存プロジェクトは旧形式のcsprojでdotnet buildが通らないため、ProjectReferenceせず
+    テスト対象のソースを直接取り込む。この形なら internal の MacroScript やパーサにも触れる。
+  -->
+  <ItemGroup>
+    <Compile Include="..\ArduinoAPI\ArduinoAPI.cs" Link="Legacy\ArduinoAPI.cs" />
+    <Compile Include="..\ORCA_Plugin\*.cs" Link="Legacy\%(Filename)%(Extension)" />
+    <Compile Include="..\ORCA_GCController\Macro\*.cs" Link="Legacy\Macro\%(Filename)%(Extension)" />
+    <Compile Include="..\ORCA_GCController\Util.cs" Link="Legacy\Util.cs" />
+  </ItemGroup>
+
+  <!-- ケースファイルはヘッドレス版のテストとも共有するのでリポジトリ直下のtests/cases/に置く -->
+  <ItemGroup>
+    <Content Include="..\tests\cases\**\*" LinkBase="cases" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+</Project>

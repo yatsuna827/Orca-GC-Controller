@@ -1,0 +1,2 @@
+Press A -d=1 -s=0
+Hit B 1 -d=1
