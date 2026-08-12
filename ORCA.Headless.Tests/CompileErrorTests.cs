@@ -1,18 +1,17 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using GCController.Macro;
+using ORCA.Core.Macro;
 using Xunit;
 
-namespace ORCA.Legacy.Tests
+namespace ORCA.Headless.Tests
 {
-    // ヘッドレス版でも一字一句同じ文言が出ることを求める.
     public class CompileErrorTests
     {
         public static IEnumerable<object[]> Cases => MacroCase.CompileErrorNames();
 
         [Theory]
         [MemberData(nameof(Cases))]
-        public void 文言が期待通りである(string name)
+        public void GUI版と同じコンパイルエラーを出力すること(string name)
         {
             var testCase = MacroCase.Load("compile_error", name);
 

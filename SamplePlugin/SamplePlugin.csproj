@@ -54,10 +54,12 @@
     <ProjectReference Include="..\ArduinoAPI\ArduinoAPI.csproj">
       <Project>{74163e25-caa3-4563-b6e1-844bac544c6e}</Project>
       <Name>ArduinoAPI</Name>
+      <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
     </ProjectReference>
-    <ProjectReference Include="..\ORCA_Plugin\ORCA_Plugin.csproj">
-      <Project>{5c89a2fd-7f07-4bf7-b71c-e3774f771f1c}</Project>
-      <Name>ORCA_Plugin</Name>
+    <ProjectReference Include="..\ORCA.Plugin\ORCA.Plugin.csproj">
+      <Project>{9a1091b7-0106-419f-b072-1c515d22a69c}</Project>
+      <Name>ORCA.Plugin</Name>
+      <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

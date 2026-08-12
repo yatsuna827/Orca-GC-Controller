@@ -1,11 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace ORCA.Legacy.Tests
+namespace ORCA.Headless.Tests
 {
-    // tests/cases/ に置いた内容がマクロの仕様そのものなので, ヘッドレス版のテストも同じファイルを読む.
     class MacroCase
     {
         public string[] MacroLines { get; private set; }
@@ -41,15 +40,13 @@ namespace ORCA.Legacy.Tests
             return result;
         }
 
-        // Form1.CompileButton_Click (Form1.cs:217) と同じ分割規則.
         private static string[] SplitLikeForm1(string text)
-            => text.Replace("\r\n", "\n").Split(new[] { '\n', '\r' });
+            => text.Replace("\r\n", "\n").Split(['\n', '\r']);
 
         // 期待値ファイルにコメントを書けるようにするため, 空行とコメント行を落とす.
         private static string[] ReadLines(string path)
-            => File.ReadAllLines(path)
+            => [.. File.ReadAllLines(path)
                 .Select(_ => _.Trim())
-                .Where(_ => _.Length > 0 && _[0] != '#')
-                .ToArray();
+                .Where(_ => _.Length > 0 && _[0] != '#')];
     }
 }

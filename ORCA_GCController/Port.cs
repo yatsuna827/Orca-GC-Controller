@@ -1,21 +1,10 @@
-﻿using ArduinoAPI;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Composition.Primitives;
-using System.Data;
-using System.IO.Ports;
+﻿using System.IO.Ports;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using ORCA.Core;
 
 namespace GCController
 {
-    public interface IPort : IWritable
-    {
-        void Open(string portName, bool rts, bool dtr);
-        bool IsOpen { get; }
-        void Close();
-    }
     public class MyPort : IPort
     {
         private SerialPort _port;

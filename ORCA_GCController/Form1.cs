@@ -2,20 +2,18 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.IO;
 using System.IO.Ports;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using GCController.Macro;
-using ArduinoAPI;
 using Sgry.Azuki;
 using Sgry.Azuki.Highlighter;
-using ORCA_Plugin;
+using ArduinoAPI;
+using ORCA.Core;
+using ORCA.Core.Macro;
 
 namespace GCController
 {
@@ -216,9 +214,12 @@ namespace GCController
             {
                 var script = scriptBox.Text.Replace("\r\n", "\n").Split(new[] { '\n', '\r' });
                 var parsers = MacroScript.GetDefaultParsers();
-                foreach(var (key, p) in ImportPlugins())
+                foreach (var (commandName, parser) in PluginLoader.Load(PluginLoader.DefaultDirectory))
                 {
-                    if (!parsers.ContainsKey(key)) parsers.Add(key, p);
+                    if (parsers.ContainsKey(commandName)) continue;
+
+                    parsers.Add(commandName, parser);
+                    logBox.AppendText($"Plugin {commandName}コマンドを読み込みました\r\n");
                 }
                 macroScript = MacroScript.Compile(script, parsers);
                 runButton.Enabled = true;
@@ -367,46 +368,6 @@ namespace GCController
         private void キーコンフィグToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show("実装はもうちょっと待っててね");
-        }
-
-        private IEnumerable<(string commandName, IMacroCommandParser<MacroCommand> parser)> ImportPlugins()
-        {
-            var pluginDir = $"{Application.StartupPath}/Plugin";
-            if (!Directory.Exists(pluginDir)) yield break;
-
-            //EXEの場所にあるDLLファイルをすべて読み込む
-            foreach (var path in Directory.GetFiles(pluginDir).Where(_ => _.ToLower().EndsWith(".dll")))
-            {
-                //ファイル読み込み
-                var asm = Assembly.LoadFrom(path);
-
-                var commandTypes = asm.GetTypes().Where(_ => _.BaseType == typeof(MacroCommand));
-
-                // MacroCommandParser<T>を継承したクラスを走査する
-                foreach (var type in asm.GetTypes()
-                    .Where(_ => !_.IsGenericType && // ジェネリックなクラスは除外する
-                                !_.IsAbstract &&    // 抽象クラスは除外する
-                                !_.IsInterface))
-                {
-                    if (type.GetConstructors().Where(_ => _.IsPublic && _.GetParameters().Length == 0).Count() == 0) continue;
-
-                    var itf = type.GetInterfaces().Where(_ => _.IsGenericType && _.GetGenericTypeDefinition() == typeof(IMacroCommandParser<>)).FirstOrDefault();
-                    if (itf == null) continue;
-
-                    var attr = type.GetCustomAttribute<MacroCommandAttribute>();
-                    if (attr is null) continue;
-
-                    var commandType = itf.GetGenericArguments().First();
-                    Debug.Print($"{type.Name} {type.FullName} {type.ReflectedType} {itf.Name} {commandType.Name}");
-
-                    //対象のクラスのインスタンスを作成
-                    var parser = Activator.CreateInstance(type) as IMacroCommandParser<MacroCommand>;
-
-                    logBox.AppendText($"Plugin {attr.CommandName}コマンドを読み込みました\r\n");
-
-                    yield return (attr.CommandName, parser);
-                }
-            }
         }
 
         private void rTS有効化ToolStripMenuItem_Click(object sender, EventArgs e)
