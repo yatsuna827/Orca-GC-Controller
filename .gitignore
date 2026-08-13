@@ -30,3 +30,5 @@ Logs/
  
 # VisualStudio
 .vs/
+
+packages/
