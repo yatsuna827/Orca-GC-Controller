@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ORCA.Core.Macro;
@@ -9,7 +8,7 @@ namespace ORCA.Tests
 {
     public class RunTests
     {
-        public static IEnumerable<object[]> Cases => MacroCase.RunNames();
+        public static TheoryData<string> Cases => MacroCase.RunNames();
 
         [Theory]
         [MemberData(nameof(Cases))]
@@ -62,7 +61,7 @@ namespace ORCA.Tests
             using (var cts = new CancellationTokenSource())
             {
                 var task = script.RunOnceAsync(port, cts.Token);
-                while (port.Entries.Length == 0) await Task.Delay(1);
+                while (port.Entries.Length == 0) await Task.Delay(1, TestContext.Current.CancellationToken);
 
                 cts.Cancel();
                 await task;
@@ -86,7 +85,7 @@ namespace ORCA.Tests
             using (var cts = new CancellationTokenSource())
             {
                 var task = script.RunLoopAsync(port, cts.Token);
-                while (port.Entries.Length < 6) await Task.Delay(1);
+                while (port.Entries.Length < 6) await Task.Delay(1, TestContext.Current.CancellationToken);
 
                 cts.Cancel();
                 await task;

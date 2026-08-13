@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using ORCA.Core.Macro;
 using Xunit;
 
@@ -7,7 +6,7 @@ namespace ORCA.Tests
 {
     public class CompileErrorTests
     {
-        public static IEnumerable<object[]> Cases => MacroCase.CompileErrorNames();
+        public static TheoryData<string> Cases => MacroCase.CompileErrorNames();
 
         [Theory]
         [MemberData(nameof(Cases))]

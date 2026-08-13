@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Xunit;
 
 namespace ORCA.Tests
 {
@@ -13,12 +13,11 @@ namespace ORCA.Tests
 
         public static string Root => Path.Combine(AppContext.BaseDirectory, "cases");
 
-        public static IEnumerable<object[]> RunNames() => Names("run");
-        public static IEnumerable<object[]> CompileErrorNames() => Names("compile_error");
+        public static TheoryData<string> RunNames() => Names("run");
+        public static TheoryData<string> CompileErrorNames() => Names("compile_error");
 
-        private static IEnumerable<object[]> Names(string category)
-            => Directory.GetDirectories(Path.Combine(Root, category))
-                .Select(_ => new object[] { Path.GetFileName(_) });
+        private static TheoryData<string> Names(string category)
+            => [.. Directory.GetDirectories(Path.Combine(Root, category)).Select(Path.GetFileName)];
 
         public static MacroCase Load(string category, string name)
         {

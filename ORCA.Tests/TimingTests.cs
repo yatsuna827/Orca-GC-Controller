@@ -51,7 +51,7 @@ namespace ORCA.Tests
             using (var cts = new CancellationTokenSource())
             {
                 var task = script.RunOnceAsync(port, cts.Token);
-                await Task.Delay(100);
+                await Task.Delay(100, TestContext.Current.CancellationToken);
 
                 var remaining = script.GetRemainingFrame();
                 Assert.NotNull(remaining);
@@ -75,7 +75,7 @@ namespace ORCA.Tests
             var task = script.RunOnceAsync(port, cts.Token);
 
             // 1つ目のHit(10F)が終わるまで待つ
-            while (port.Entries.Length < 2) await Task.Delay(1);
+            while (port.Entries.Length < 2) await Task.Delay(1, TestContext.Current.CancellationToken);
 
             Assert.Null(script.GetRemainingFrame());
 
