@@ -74,7 +74,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Azuki">
-      <HintPath>..\..\..\..\..\OneDrive\デスクトップ\Shot\Azuki.dll</HintPath>
+      <HintPath>azuki\Azuki.dll</HintPath>
     </Reference>
     <Reference Include="Costura, Version=5.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Costura.Fody.5.0.2\lib\netstandard1.0\Costura.dll</HintPath>
