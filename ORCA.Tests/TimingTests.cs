@@ -3,9 +3,7 @@ using System.Threading.Tasks;
 using ORCA.Core.Macro;
 using Xunit;
 
-// ま～～～～～～～じで日本語がキモい
-
-namespace ORCA.Headless.Tests
+namespace ORCA.Tests
 {
     [Trait("Category", "Timing")]
     public class TimingTests

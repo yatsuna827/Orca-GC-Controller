@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using ORCA.Core;
 
-namespace ORCA.Headless.Tests
+namespace ORCA.Tests
 {
     class RecordingPort : IPort
     {

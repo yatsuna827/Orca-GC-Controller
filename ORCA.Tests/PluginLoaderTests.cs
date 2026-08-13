@@ -8,7 +8,7 @@ using ORCA.Core;
 using ORCA.Plugin;
 using Xunit;
 
-namespace ORCA.Headless.Tests
+namespace ORCA.Tests
 {
     public class PluginLoaderTests
     {

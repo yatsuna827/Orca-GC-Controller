@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace ORCA.Headless.Tests
+namespace ORCA.Tests
 {
     class MacroCase
     {

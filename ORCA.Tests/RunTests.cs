@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using ORCA.Core.Macro;
 using Xunit;
 
-namespace ORCA.Headless.Tests
+namespace ORCA.Tests
 {
     public class RunTests
     {

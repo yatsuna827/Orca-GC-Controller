@@ -77,7 +77,7 @@ namespace ORCA.Headless.Tests
             session.Execute("connect COM_TEST");
             session.Execute($"load {WriteMacro("Press A -d=5000")}");
             session.Execute("run");
-            SpinWait.SpinUntil(() => _port.Entries.Length > 0, 2000);
+            SpinWait.SpinUntil(() => _port.HexLines.Length > 0, 2000);
 
             session.Execute("cancel");
 

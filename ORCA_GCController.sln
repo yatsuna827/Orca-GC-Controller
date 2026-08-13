@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32422.2
@@ -16,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORCA.Headless", "ORCA.Headless\ORCA.Headless.csproj", "{63487232-4096-4683-A63D-179F77BF01BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORCA.Headless.Tests", "ORCA.Headless.Tests\ORCA.Headless.Tests.csproj", "{7A78D0E0-F1DD-4C14-A719-35ED2FAF89A4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORCA.Tests", "ORCA.Tests\ORCA.Tests.csproj", "{DD788A24-803C-435B-A451-152D9E609E4D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +113,18 @@ Global
 		{7A78D0E0-F1DD-4C14-A719-35ED2FAF89A4}.Release|x64.Build.0 = Release|Any CPU
 		{7A78D0E0-F1DD-4C14-A719-35ED2FAF89A4}.Release|x86.ActiveCfg = Release|Any CPU
 		{7A78D0E0-F1DD-4C14-A719-35ED2FAF89A4}.Release|x86.Build.0 = Release|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Debug|x64.Build.0 = Debug|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Debug|x86.Build.0 = Debug|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Release|x64.ActiveCfg = Release|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Release|x64.Build.0 = Release|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Release|x86.ActiveCfg = Release|Any CPU
+		{DD788A24-803C-435B-A451-152D9E609E4D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
