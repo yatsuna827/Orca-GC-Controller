@@ -8,8 +8,6 @@ namespace ORCA.Tests
     [Trait("Category", "Timing")]
     public class TimingTests
     {
-        private const double FrameRate = 59.7275;
-
         private static MacroScript Compile(params string[] lines)
             => MacroScript.Compile(lines, MacroScript.GetDefaultParsers());
 
@@ -25,8 +23,8 @@ namespace ORCA.Tests
         {
             var port = await RunOnce(Compile("Start -s=0", "Hit A 30 -d=1"));
 
-            var expected = (long)(30 * 1000 / FrameRate);
-            Assert.InRange(port.Entries[0].ElapsedMs, expected - 30, expected + 30);
+            // 30Fは502ms
+            Assert.InRange(port.Entries[0].ElapsedMs, 472L, 532L);
         }
 
         [Fact]
@@ -38,10 +36,8 @@ namespace ORCA.Tests
             Assert.InRange(waited, 190L, 240L);
         }
 
-        // 以下2件は既存の不具合
-
         [Fact]
-        public async Task 残りフレームの表示はHit計画のひとつ先を指している()
+        public async Task GetRemainingFrameは次のHitまでの残りフレーム数を返す()
         {
             var script = Compile("Start -s=0", "Hit A 60 -d=1", "Hit B 120 -d=1");
             var port = new RecordingPort();
@@ -56,8 +52,8 @@ namespace ORCA.Tests
                 var remaining = script.GetRemainingFrame();
                 Assert.NotNull(remaining);
 
-                var elapsedFrame = (int)(100 * FrameRate / 1000);
-                Assert.InRange(remaining.Value, 120 - elapsedFrame - 5, 120 - elapsedFrame + 5);
+                // 100msで5F経過するので残りは55F前後
+                Assert.InRange(remaining.Value, 50, 60);
 
                 await task;
             }
@@ -66,7 +62,7 @@ namespace ORCA.Tests
         }
 
         [Fact]
-        public async Task 最後のHitを待つ間は残りフレームが取れない()
+        public async Task 最後のHitが完了するまでGetRemainingFrameはnullにならない()
         {
             var script = Compile("Start -s=0", "Hit A 10 -d=1", "Hit B 20 -d=1");
             var port = new RecordingPort();
@@ -77,9 +73,26 @@ namespace ORCA.Tests
             // 1つ目のHit(10F)が終わるまで待つ
             while (port.Entries.Length < 2) await Task.Delay(1, TestContext.Current.CancellationToken);
 
+            Assert.NotNull(script.GetRemainingFrame());
+
+            await task;
+        }
+        
+        [Fact]
+        public async Task すべてのHitが実行されたあとは残りフレームがnullになる()
+        {
+            var script = Compile("Start -s=0", "Hit A 10 -d=1", "Wait 500");
+            var port = new RecordingPort();
+
+            using var cts = new CancellationTokenSource();
+            var task = script.RunOnceAsync(port, cts.Token);
+
+            while (port.Entries.Length < 2) await Task.Delay(1, TestContext.Current.CancellationToken);
+
             Assert.Null(script.GetRemainingFrame());
 
             await task;
         }
+
     }
 }

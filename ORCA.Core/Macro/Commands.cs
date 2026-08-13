@@ -64,7 +64,6 @@ namespace ORCA.Core.Macro
         public override void Execute(IWritable port, in CancellationToken token, IMacroContext context)
         {
             context.StartTimer(_label);
-            context.GetNextHitIndex();
         }
 
         public StartCommand(int label)
