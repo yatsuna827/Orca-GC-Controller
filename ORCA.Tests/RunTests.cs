@@ -95,5 +95,28 @@ namespace ORCA.Tests
             // 何周するかは時間次第なので、押下と解放が交互に並ぶことだけを検証する
             Assert.All(port.HexLines.Where((_, i) => i % 2 == 0), _ => Assert.Equal("80 81 80", _));
         }
+
+        [Fact]
+        public async Task オプションが省略されたStartコマンドを実行するとタイマー0が起動されること()
+        {
+            // Arrange
+            var script = MacroScript.Compile(
+                [
+                    "Start",
+                    "Hit A 600 -d=1"
+                ],
+                MacroScript.GetDefaultParsers());
+            var port = new RecordingPort();
+
+            // Act
+            using var cts = new CancellationTokenSource();
+            var task = script.RunOnceAsync(port, cts.Token);
+
+            // Assert
+            Assert.True(SpinWait.SpinUntil(() => script.GetRemainingFrame() < 600, 1000));
+
+            cts.Cancel();
+            await task;
+        }
     }
 }

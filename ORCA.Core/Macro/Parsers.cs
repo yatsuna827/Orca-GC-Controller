@@ -46,7 +46,7 @@ namespace ORCA.Core.Macro
 
             for (int i = 1; i < args.Length; i++)
             {
-                if (args[i].Length < 4 || !Regex.IsMatch(args[i].Substring(0, 3), $"-[{string.Join(",", optionCharactors)}]="))
+                if (args[i].Length < 4 || !Regex.IsMatch(args[i].Substring(0, 3), $"-[{new string(optionCharactors)}]="))
                     return ReturnError(context.CurrentLine, "オプション指定子が不正です", out errorMessage);
 
                 if (options[args[i][1]] != "")
@@ -124,22 +124,22 @@ namespace ORCA.Core.Macro
             if (args.Length > 1)
                 return ReturnError(context.CurrentLine, "引数の数が不正です", out errorMessage);
 
-            var label = -1;
+            var label = 0;
             if (args.Length == 1)
             {
-                if (args[0].Substring(0, 3) != "-s=")
+                if (!args[0].StartsWith("-s="))
                     return ReturnError(context.CurrentLine, "オプション指定子が不正です", out errorMessage);
 
                 var val = args[0].Substring(3);
                 if (val.Length != 1 || !int.TryParse(val, out label))
                     return ReturnError(context.CurrentLine, "-sオプションは1桁の数字である必要があります", out errorMessage);
-
-                // タイマーの重複起動を弾く.
-                if (context.TimerStarted(label))
-                    return ReturnError(context.CurrentLine, $"タイマー{label}の開始命令が重複しています", out errorMessage);
-
-                context.SetTimerStarted(label);
             }
+
+            // タイマーの重複起動を弾く.
+            if (context.TimerStarted(label))
+                return ReturnError(context.CurrentLine, $"タイマー{label}の開始命令が重複しています", out errorMessage);
+
+            context.SetTimerStarted(label);
 
             errorMessage = "";
             return new StartCommand(label);
@@ -175,7 +175,7 @@ namespace ORCA.Core.Macro
             var options = optionCharactors.ToDictionary(_ => _, _ => "");
             for (int i = 2; i < args.Length; i++)
             {
-                if (args[i].Length < 4 || !Regex.IsMatch(args[i].Substring(0, 3), $"-[{string.Join(",", optionCharactors)}]="))
+                if (args[i].Length < 4 || !Regex.IsMatch(args[i].Substring(0, 3), $"-[{new string(optionCharactors)}]="))
                     return ReturnError(context.CurrentLine, "オプション指定子が不正です", out errorMessage);
 
                 if (options[args[i][1]] != "")
