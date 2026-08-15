@@ -1,11 +1,13 @@
-using System.IO;
+using System;
 using System.IO.Ports;
 using System.Linq;
-using System.Text;
 using ORCA.Core;
 
 namespace ORCA.Headless
 {
+    /// <summary>
+    /// Writeされたデータをシリアルポートに流すIPort実装
+    /// </summary>
     class SerialControllerPort : IPort
     {
         private SerialPort _port;
@@ -26,21 +28,29 @@ namespace ORCA.Headless
         public void Close() => _port?.Close();
     }
 
-    class DryRunPort : IPort
+    /// <summary>
+    /// Writeされたデータを標準出力に流すIPort実装
+    /// </summary>
+    class ConsolePort : IPort
     {
-        private StringBuilder _logger;
-
         public void Write(byte[] buffer, int offset, int count)
-            => _logger.AppendLine($"{string.Join(" ", buffer.Select(_ => $"{_:X2}"))}");
+            => Console.WriteLine(string.Join(" ", buffer.Skip(offset).Take(count).Select(_ => $"{_:X2}")));
 
-        public void Open(string portName, bool rts, bool dtr) => _logger = new StringBuilder();
+        public void Open(string portName, bool rts, bool dtr) => IsOpen = true;
 
-        public bool IsOpen => _logger != null;
+        public bool IsOpen { get; private set; }
 
-        public void Close()
-        {
-            File.WriteAllText("./log.txt", _logger.ToString());
-            _logger = null;
-        }
+        public void Close() => IsOpen = false;
+    }
+
+    class NullPort : IPort
+    {
+        public void Write(byte[] buffer, int offset, int count) { }
+
+        public void Open(string portName, bool rts, bool dtr) => IsOpen = true;
+
+        public bool IsOpen { get; private set; }
+
+        public void Close() => IsOpen = false;
     }
 }
