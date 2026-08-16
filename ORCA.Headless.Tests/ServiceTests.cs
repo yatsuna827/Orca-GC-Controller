@@ -284,6 +284,33 @@ namespace ORCA.Headless.Tests
         }
 
         [Fact]
+        public void statusコマンド_マクロが実行中でなければidleを返すこと()
+        {
+            var service = NewService();
+
+            var response = Do(service, "status");
+
+            Assert.True(response.Ok);
+            Assert.Contains("idle", response.Lines);
+        }
+
+        [Fact]
+        public async Task statusコマンド_マクロ実行中ならばrunningを返すこと()
+        {
+            var service = NewService();
+
+            Do(service, "connect", "COM_TEST");
+            var running = RunInBackground(service, "Press A -d=5000");
+            var response = Do(service, "status");
+
+            Assert.True(response.Ok);
+            Assert.Contains("running", response.Lines);
+
+            Do(service, "shutdown");
+            await running;
+        }
+
+        [Fact]
         public void dryrunはポート未接続でも実行できること()
         {
             var service = NewService();

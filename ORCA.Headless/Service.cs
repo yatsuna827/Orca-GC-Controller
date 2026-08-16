@@ -61,6 +61,7 @@ namespace ORCA.Headless
                     "rerun" => Rerun(args, CancellationTokenSource.CreateLinkedTokenSource(clientGone), onProgress),
                     "set-port" => SetPort(args),
                     "history" => History(),
+                    "status" => Status(),
                     "shutdown" => Shutdown(),
                     _ => Response.Fail($"unknown command: {request.Command}"),
                 };
@@ -236,6 +237,14 @@ namespace ORCA.Headless
                 var labels = _history.Entries.Select(e => e.Label).ToArray();
                 var lines = _history.Entries.Select((e, i) => e.DryRun ? $"{i + 1}: {e.Label} (dry-run)" : $"{i + 1}: {e.Label}").ToArray();
                 return Response.Text(lines) with { Data = labels };
+            }
+        }
+
+        private Response Status()
+        {
+            lock (_gate)
+            {
+                return Response.Text(HasRunningMacro ? "running" : "idle");
             }
         }
 

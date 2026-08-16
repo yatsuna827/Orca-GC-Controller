@@ -16,6 +16,7 @@ namespace ORCA.Headless
               set-port <port>                            set the default port
               run <path> [--loop [count]] [--dry-run]   run a macro; Ctrl+C to cancel
               rerun [number] [--loop [count]] [--no-dry-run] rerun from history; defaults to the last one
+              status                                    show macro status
               history                                   list macro history
               shutdown                                  stop the service
 
