@@ -255,9 +255,9 @@ namespace ORCA.Headless
         {
             var i = Array.IndexOf(args, "--loop");
             if (i < 0) return null;
-            if (i + 1 >= args.Length) return -1;
+            if (i + 1 < args.Length && int.TryParse(args[i + 1], out var count)) return count;
 
-            return int.Parse(args[i + 1]);
+            return -1;
         }
     
     }

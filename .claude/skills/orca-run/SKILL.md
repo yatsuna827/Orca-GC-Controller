@@ -40,11 +40,9 @@ orca connect COM3            # 接続. ポート名を省略するとデフォ�
 ```
 orca run macro.txt                    # 1回実行
 orca run macro.txt --loop 5           # 5回ループ
-orca run macro.txt --quiet --loop     # 回数省略で無限ループ
+orca run macro.txt --quiet --loop     # 回数省略なら無限ループ
 orca run macro.txt --dry-run          # ポートを触らずに動作だけ確認
 ```
-
-`--loop` を回数なしで使うときは引数列の最後に置く。直後に別のオプションが来ると回数として解釈しようとして失敗する。
 
 マクロ本文を読むのはクライアント側なので、パスは `orca` を起動したディレクトリから解決される。
 

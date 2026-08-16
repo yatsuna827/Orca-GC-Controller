@@ -124,6 +124,21 @@ namespace ORCA.Headless.Tests
         }
 
         [Fact]
+        public async Task runコマンド_回数指定なしのloopオプションの後に別のオプションを指定してもパースエラーにならないこと()
+        {
+            var service = NewService();
+            var cts = new CancellationTokenSource();
+
+            var running = Task.Run(() => service.Handle(new Request("run", ["macro.txt", "--loop", "--dry-run"], "Press A -d=10"), clientGone: cts.Token));
+            SpinWait.SpinUntil(() => service.HasRunningMacro, 2000);
+
+            Assert.True(service.HasRunningMacro);
+            cts.Cancel();
+            var response = await running;
+            Assert.Contains("macro cancelled", response.Lines);
+        }
+
+        [Fact]
         public void connectコマンド_接続済みならコマンドを拒否すること()
         {
             var service = NewService();
@@ -250,6 +265,22 @@ namespace ORCA.Headless.Tests
 
             Assert.False(response.Ok);
             Assert.Contains("only 2 entries in history", response.Lines);
+        }
+
+        [Fact]
+        public async Task rerunコマンド_回数指定なしのloopオプションの後に別のオプションを指定してもパースエラーにならないこと()
+        {
+            var service = NewService();
+            var cts = new CancellationTokenSource();
+
+            service.Handle(new Request("run", ["macro.txt", "--dry-run"], "Press A -d=10"), clientGone: TestContext.Current.CancellationToken);
+            var running = Task.Run(() => service.Handle(new Request("rerun", ["--loop", "--dry-run"]), clientGone: cts.Token));
+            SpinWait.SpinUntil(() => service.HasRunningMacro, 2000);
+
+            Assert.True(service.HasRunningMacro);
+            cts.Cancel();
+            var response = await running;
+            Assert.Contains("macro cancelled", response.Lines);
         }
 
         [Fact]
