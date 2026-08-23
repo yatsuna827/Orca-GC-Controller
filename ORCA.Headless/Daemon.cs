@@ -1,48 +1,81 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ORCA.Headless
 {
     static class Daemon
     {
         public static int Run(string defaultPort = null)
-        {
-            static NamedPipeServerStream NewServer() =>
-                new(Protocol.PipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            => Listen(Protocol.PipeName, new Service(defaultPort: defaultPort));
 
-            NamedPipeServerStream pipe;
-            try { pipe = NewServer(); }
-            catch (IOException)
+        internal static int Listen(string pipeName, Service service)
+        {
+            // 多重起動の防止
+
+            using var single = new Mutex(false, $@"Global\{pipeName}");
+
+            var owned = false;
+            try { owned = single.WaitOne(0); }
+            // 前のプロセスがReleaseMutexを呼ばずに異常終了していた場合、
+            // 例外は発生するが、Mutexの所有権自体は取得できている
+            catch (AbandonedMutexException) { owned = true; }
+
+            if (!owned)
             {
                 Console.Error.WriteLine("service is already running");
                 return 1;
             }
 
-            var service = new Service(defaultPort: defaultPort);
-            foreach (var name in service.PluginCommands)
-                Console.WriteLine($"loaded plugin: {name}");
+            // ほんたい
 
-            Console.CancelKeyPress += (_, _) => service.Handle(new Request("shutdown", []));
-
-            Console.WriteLine($@"listening: \\.\pipe\{Protocol.PipeName}");
-
-            while (true)
+            try
             {
-                using (pipe)
+                foreach (var name in service.PluginCommands)
+                    Console.WriteLine($"loaded plugin: {name}");
+
+                Console.CancelKeyPress += (_, _) => service.Handle(new Request("shutdown", []));
+
+                Console.WriteLine($@"listening: \\.\pipe\{pipeName}");
+
+                var clients = new List<Task>();
+                while (true)
                 {
-                    pipe.WaitForConnection();
-                    try { Serve(pipe, service); }
-                    // クライアントが応答を待たずに切断した
-                    catch (IOException) { }
+                    var pipe = NewServer(pipeName);
+                    try { pipe.WaitForConnectionAsync(service.Stopping).GetAwaiter().GetResult(); }
+                    catch (OperationCanceledException)
+                    {
+                        pipe.Dispose();
+                        break;
+                    }
+
+                    clients.Add(Task.Factory.StartNew(() => ServeClient(pipe, service), TaskCreationOptions.LongRunning));
+                    clients.RemoveAll(t => t.IsCompleted);
                 }
 
-                if (!service.Running) return 0;
+                // サービスが停止に入ったあと、処理中のクライアントが応答を書き終えるために猶予を設ける
+                Task.WaitAll([.. clients], 2000);
 
-                pipe = NewServer();
+                return 0;
+            }
+            finally { single.ReleaseMutex(); }
+        }
+
+        private static NamedPipeServerStream NewServer(string pipeName) =>
+            new(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+
+        private static void ServeClient(NamedPipeServerStream pipe, Service service)
+        {
+            using (pipe)
+            {
+                try { Serve(pipe, service); }
+                catch (IOException) { } // クライアント側が応答を待たずに終了した場合などに投げられる。正常な切断と同じ扱いでいい。
+                catch (Exception ex) { Console.Error.WriteLine($"failed to serve a client: {ex.Message}"); }
             }
         }
 

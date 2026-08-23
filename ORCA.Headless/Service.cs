@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
@@ -16,20 +17,26 @@ namespace ORCA.Headless
         private readonly Func<IPort> _newPort;
         private readonly Dictionary<string, IMacroCommandParser<MacroCommand>> _parsers;
 
+        // _portや_runningなど、Serviceの可変状態全般の読み書きの排他制御のためのLockオブジェクト
         private readonly Lock _gate = new();
 
         private IPort _port;
         private string _defaultPortName;
-        private Task _task;
-        private CancellationTokenSource _cts;
-        private MacroScript _script;
-        private string[] _sourceLines;
+
+        private Running _running;
+
+        private volatile bool _shuttingDown;
 
         private readonly MacroHistory _history = new();
 
+        private readonly CancellationTokenSource _stopping = new();
+
+        private sealed record Running(MacroHistory.Entry Entry, IPort Port, Task Task, CancellationTokenSource Cts);
+
         public string[] PluginCommands { get; }
-        public bool Running { get; private set; } = true;
-        public bool HasRunningMacro => _task != null && !_task.IsCompleted;
+        public bool HasRunningMacro => Volatile.Read(ref _running) is { Task.IsCompleted: false };
+
+        public CancellationToken Stopping => _stopping.Token;
 
         public Service(Func<IPort> newPort = null, string defaultPort = null)
         {
@@ -49,6 +56,8 @@ namespace ORCA.Headless
 
         public Response Handle(Request request, Action<Progress> onProgress = null, CancellationToken clientGone = default)
         {
+            if (_shuttingDown) return Response.Fail("shutting down");
+
             var args = request.Args ?? [];
             try
             {
@@ -57,8 +66,8 @@ namespace ORCA.Headless
                     "ports" => Ports(),
                     "connect" => Connect(args),
                     "disconnect" => Disconnect(),
-                    "run" => Run(args, request.Body, CancellationTokenSource.CreateLinkedTokenSource(clientGone), onProgress),
-                    "rerun" => Rerun(args, CancellationTokenSource.CreateLinkedTokenSource(clientGone), onProgress),
+                    "run" => Run(args, request.Body, onProgress, clientGone),
+                    "rerun" => Rerun(args, onProgress, clientGone),
                     "set-port" => SetPort(args),
                     "history" => History(),
                     "status" => Status(),
@@ -75,15 +84,42 @@ namespace ORCA.Headless
         private static Response Ports()
         {
             var names = SerialPort.GetPortNames();
-            string[] lines = names.Length == 0 ? ["no ports available"] : names;
+            var lines = names.Length == 0 ? ["no ports available"] : names;
 
             return Response.Text(lines) with { Data = names };
+        }
+
+        private Response Status() => Response.Text(HasRunningMacro ? "running" : "idle");
+
+        private Response History()
+        {
+            lock (_gate)
+            {
+                if (_history.Count == 0) return Response.Fail("no history");
+
+                var labels = _history.Entries.Select(e => e.Label).ToArray();
+                var lines = _history.Entries.Select((e, i) => e.DryRun ? $"{i + 1}: {e.Label} (dry-run)" : $"{i + 1}: {e.Label}").ToArray();
+                return Response.Text(lines) with { Data = labels };
+            }
+        }
+
+        private Response SetPort(string[] args)
+        {
+            lock (_gate)
+            {
+                if (args.Length == 0) return Response.Fail("usage: set-port <port>");
+
+                _defaultPortName = args[0];
+                return Response.Text($"default port: {args[0]}");
+            }
         }
 
         private Response Connect(string[] args)
         {
             lock (_gate)
             {
+                // lock(_gate)を待っている間にshutdownが受理される場合がある
+                if (_shuttingDown) return Response.Fail("shutting down");
                 if (_port != null && _port.IsOpen) return Response.Fail("already connected");
 
                 var portName = args.Length > 0 && !args[0].StartsWith('-') ? args[0] : _defaultPortName;
@@ -105,17 +141,6 @@ namespace ORCA.Headless
             }
         }
 
-        private Response SetPort(string[] args)
-        {
-            lock (_gate)
-            {
-                if (args.Length == 0) return Response.Fail("usage: set-port <port>");
-
-                _defaultPortName = args[0];
-                return Response.Text($"default port: {args[0]}");
-            }
-        }
-
         private Response Disconnect()
         {
             lock (_gate)
@@ -128,37 +153,53 @@ namespace ORCA.Headless
             }
         }
 
-        private Response Run(string[] args, string body, CancellationTokenSource cts, Action<Progress> onProgress)
+        private Response Shutdown()
         {
+            _shuttingDown = true;
+            try
+            {
+                lock (_gate)
+                {
+                    StopMacro();
+                    _port?.Close();
+                }
+            }
+            finally { _stopping.Cancel(); }
+
+            return Response.Text("shutting down");
+        }
+
+        private Response Run(string[] args, string body, Action<Progress> onProgress, CancellationToken clientGone)
+        {
+            Running running;
             lock (_gate)
             {
+                // lock(_gate)を待っている間にshutdownコマンドが受理される場合がある
+                if (_shuttingDown) return Response.Fail("shutting down");
+
                 var dryRun = args.Contains("--dry-run");
                 if (!dryRun && (_port is null || !_port.IsOpen)) return Response.Fail("not connected");
                 if (HasRunningMacro) return Response.Fail("macro already running");
                 if (body is null) return Response.Fail("usage: run <path> [--loop [count]]");
 
-                var port = dryRun ? new NullPort() : _port;
                 var sourceLines = body.Replace("\r\n", "\n").Split(['\n', '\r']);
                 var entry = new MacroHistory.Entry(args.Length > 0 ? args[0] : "(unnamed)", dryRun, MacroScript.Compile(sourceLines, _parsers), sourceLines);
-                
-                _history.Remember(entry);
 
-                _cts = cts;
-                _script = entry.Script;
-                _sourceLines = sourceLines;
-                var loop = ParseLoop(args);
-                _task = loop.HasValue
-                    ? entry.Script.RunLoopAsync(port, _cts.Token, loop.Value)
-                    : entry.Script.RunOnceAsync(port, _cts.Token);
+                _history.Remember(entry);
+                running = StartMacro(entry, dryRun, ParseLoop(args), clientGone);
             }
 
-            return WaitForMacro(onProgress);
+            return WaitForMacro(running, onProgress);
         }
 
-        private Response Rerun(string[] args, CancellationTokenSource cts, Action<Progress> onProgress)
+        private Response Rerun(string[] args, Action<Progress> onProgress, CancellationToken clientGone)
         {
+            Running running;
             lock (_gate)
             {
+                // lock(_gate)を待っている間にshutdownコマンドが受理される場合がある
+                if (_shuttingDown) return Response.Fail("shutting down");
+
                 if (HasRunningMacro) return Response.Fail("macro already running");
 
                 var index = 1;
@@ -173,93 +214,72 @@ namespace ORCA.Headless
                 if (!dryRun && (_port is null || !_port.IsOpen)) return Response.Fail("not connected");
 
                 _history.Remember(entry);
-
-                var port = dryRun ? new NullPort() : _port;
-                var loop = ParseLoop(args);
-                _cts = cts;
-                _script = entry.Script;
-                _sourceLines = entry.SourceLines;
-                _task = loop.HasValue
-                    ? entry.Script.RunLoopAsync(port, _cts.Token, loop.Value)
-                    : entry.Script.RunOnceAsync(port, _cts.Token);
+                running = StartMacro(entry, dryRun, ParseLoop(args), clientGone);
             }
 
-            return WaitForMacro(onProgress);
+            return WaitForMacro(running, onProgress);
         }
 
-        private Response WaitForMacro(Action<Progress> onProgress)
+        private Running StartMacro(MacroHistory.Entry entry, bool dryRun, int? loop, CancellationToken clientGone)
         {
+            Debug.Assert(_gate.IsHeldByCurrentThread);
+
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(clientGone);
+            var port = dryRun ? new NullPort() : _port;
+            var task = loop.HasValue
+                ? entry.Script.RunLoopAsync(port, cts.Token, loop.Value)
+                : entry.Script.RunOnceAsync(port, cts.Token);
+
+            return _running = new Running(entry, port, task, cts);
+        }
+
+        private Response WaitForMacro(Running running, Action<Progress> onProgress)
+        {
+            var (entry, port, task, cts) = running;
+
             int lastLine = -1;
-            while (true)
+            while (!task.IsCompleted)
             {
-                var current = _script.CurrentLine;
-                if (current != lastLine && current >= 0 && current < _sourceLines.Length)
+                var current = entry.Script.CurrentLine;
+                if (current != lastLine && current >= 0 && current < entry.SourceLines.Length)
                 {
                     lastLine = current;
-                    onProgress?.Invoke(new Progress(current + 1, _sourceLines[current]));
+                    onProgress?.Invoke(new Progress(current + 1, entry.SourceLines[current]));
                 }
 
-                try { if (_task.Wait(100)) break; }
+                try { task.Wait(100); }
                 catch (AggregateException) { break; }
             }
 
-            if (!_cts.IsCancellationRequested)
-                return Response.Text("macro finished");
+            if (!cts.IsCancellationRequested && !task.IsFaulted) return Response.Text("macro finished");
 
-            ReleaseButtons();
-            return Response.Text("macro cancelled");
+            lock (_gate)
+            {
+                if (_running == running && port.IsOpen) port.SetButtonState(ControllerInput.KeysAllUp);
+            }
+
+            return task.IsFaulted
+                ? Response.Fail($"error: {task.Exception.GetBaseException().Message}")
+                : Response.Text("macro cancelled");
         }
 
         private void StopMacro()
         {
-            if (!HasRunningMacro) return;
+            Debug.Assert(_gate.IsHeldByCurrentThread);
 
-            _cts.Cancel();
-            try { _task.Wait(); } catch (AggregateException) { }
+            var running = _running;
+            if (running is null) return;
 
-            ReleaseButtons();
-        }
-
-        private void ReleaseButtons()
-        {
-            lock (_gate)
+            if (!running.Task.IsCompleted)
             {
-                _port?.SetButtonState(ControllerInput.KeysAllUp);
+                running.Cts.Cancel();
+                try { running.Task.Wait(); } catch (AggregateException) { }
             }
+
+            if (running.Cts.IsCancellationRequested && running.Port.IsOpen)
+                running.Port.SetButtonState(ControllerInput.KeysAllUp);
         }
 
-        private Response History()
-        {
-            lock (_gate)
-            {
-                if (_history.Count == 0) return Response.Fail("no history");
-
-                var labels = _history.Entries.Select(e => e.Label).ToArray();
-                var lines = _history.Entries.Select((e, i) => e.DryRun ? $"{i + 1}: {e.Label} (dry-run)" : $"{i + 1}: {e.Label}").ToArray();
-                return Response.Text(lines) with { Data = labels };
-            }
-        }
-
-        private Response Status()
-        {
-            lock (_gate)
-            {
-                return Response.Text(HasRunningMacro ? "running" : "idle");
-            }
-        }
-
-        private Response Shutdown()
-        {
-            lock (_gate)
-            {
-                StopMacro();
-                _port?.Close();
-
-                Running = false;
-                return Response.Text("shutting down");
-            }
-        }
-    
         private static int? ParseLoop(string[] args)
         {
             var i = Array.IndexOf(args, "--loop");
@@ -268,7 +288,7 @@ namespace ORCA.Headless
 
             return -1;
         }
-    
+
     }
 
     internal sealed class MacroHistory
@@ -294,5 +314,5 @@ namespace ORCA.Headless
         }
 
     }
-    
+
 }
