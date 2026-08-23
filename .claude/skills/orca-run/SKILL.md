@@ -40,11 +40,9 @@ orca connect COM3            # 接続. ポート名を省略するとデフォ�
 ```
 orca run macro.txt                    # 1回実行
 orca run macro.txt --loop 5           # 5回ループ
-orca run macro.txt --quiet --loop     # 回数省略で無限ループ
+orca run macro.txt --quiet --loop     # 回数省略なら無限ループ
 orca run macro.txt --dry-run          # ポートを触らずに動作だけ確認
 ```
-
-`--loop` を回数なしで使うときは引数列の最後に置く。直後に別のオプションが来ると回数として解釈しようとして失敗する。
 
 マクロ本文を読むのはクライアント側なので、パスは `orca` を起動したディレクトリから解決される。
 
@@ -71,6 +69,7 @@ orca run macro.txt --dry-run          # ポートを触らずに動作だけ確�
 同時に実行できるマクロは1本だけで、走っている最中に別の `run` を送ると `macro already running` が返る。勝手に止めずにユーザーに伝える。
 
 ```
+orca status             # マクロが実行中なら running、そうでなければ idle を返す
 orca history            # 直近10件の実行履歴. dry-run だったものには (dry-run) が付く
 orca rerun              # 履歴の最新をもう一度. dry-run 属性も引き継がれる
 orca rerun 3 --loop 10  # 履歴の3番目を10回ループ

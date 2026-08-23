@@ -23,6 +23,7 @@ orca daemon [--port <シリアルポート名>]
 | `orca set-port <port> [--json]` | デフォルトポートを設定 |
 | `orca run <path> [--loop [count]] [--dry-run] [--json] [--quiet]` | マクロファイルを実行 |
 | `orca rerun [number] [--loop [count]] [--no-dry-run] [--json] [--quiet]` | 履歴からマクロを再実行 |
+| `orca status [--json]` | マクロの実行状態を表示 |
 | `orca history [--json]` | マクロ実行履歴を表示 |
 | `orca shutdown [--json]` | デーモンを停止 |
 

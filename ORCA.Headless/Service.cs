@@ -61,6 +61,7 @@ namespace ORCA.Headless
                     "rerun" => Rerun(args, CancellationTokenSource.CreateLinkedTokenSource(clientGone), onProgress),
                     "set-port" => SetPort(args),
                     "history" => History(),
+                    "status" => Status(),
                     "shutdown" => Shutdown(),
                     _ => Response.Fail($"unknown command: {request.Command}"),
                 };
@@ -239,6 +240,14 @@ namespace ORCA.Headless
             }
         }
 
+        private Response Status()
+        {
+            lock (_gate)
+            {
+                return Response.Text(HasRunningMacro ? "running" : "idle");
+            }
+        }
+
         private Response Shutdown()
         {
             lock (_gate)
@@ -255,9 +264,9 @@ namespace ORCA.Headless
         {
             var i = Array.IndexOf(args, "--loop");
             if (i < 0) return null;
-            if (i + 1 >= args.Length) return -1;
+            if (i + 1 < args.Length && int.TryParse(args[i + 1], out var count)) return count;
 
-            return int.Parse(args[i + 1]);
+            return -1;
         }
     
     }
