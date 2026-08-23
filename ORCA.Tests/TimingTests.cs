@@ -77,7 +77,7 @@ namespace ORCA.Tests
 
             await task;
         }
-        
+
         [Fact]
         public async Task すべてのHitが実行されたあとは残りフレームがnullになる()
         {
@@ -94,5 +94,20 @@ namespace ORCA.Tests
             await task;
         }
 
+        [Fact]
+        public async Task Hitコマンドの押下間隔が指定フレームの間隔と一致すること()
+        {
+            var port = await RunOnce(Compile(
+                "Start -s=0",
+                "Hit A 30 -d=1",
+                "Hit B 60 -d=1",
+                "Hit A 90 -d=1"));
+            var entries = port.Entries;
+
+            // 30Fを59.7275fpsでmsに換算したら502ms
+            // 30F ± 10msの間隔に収まることを検証する
+            Assert.InRange(entries[2].ElapsedMs - entries[0].ElapsedMs, 492L, 512L);
+            Assert.InRange(entries[4].ElapsedMs - entries[2].ElapsedMs, 492L, 512L);
+        }
     }
 }
