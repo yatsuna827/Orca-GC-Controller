@@ -1,6 +1,6 @@
 using ArduinoAPI;
 
-namespace ORCA.Core
+namespace ORCA.Runtime
 {
     public interface IPort : IWritable
     {

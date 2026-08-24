@@ -2,10 +2,10 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 using ArduinoAPI;
-using ORCA.Plugin;
-using static ORCA.Plugin.Utils;
+using ORCA.Core;
+using static ORCA.Core.Utils;
 
-namespace ORCA.Core.Macro
+namespace ORCA.Runtime.Macro
 {
     class PressCommandParser : IMacroCommandParser<PressCommand>
     {

@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace ORCA.Plugin
+namespace ORCA.Core
 {
     public interface IMacroContext
     {

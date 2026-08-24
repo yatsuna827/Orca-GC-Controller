@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using ArduinoAPI;
 
-namespace ORCA.Plugin
+namespace ORCA.Core
 {
     public static class Utils
     {

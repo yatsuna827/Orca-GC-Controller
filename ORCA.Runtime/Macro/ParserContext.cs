@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using ORCA.Plugin;
+using ORCA.Core;
 
-namespace ORCA.Core.Macro
+namespace ORCA.Runtime.Macro
 {
     class ParserContext : IMacroParserContext
     {

@@ -12,8 +12,8 @@ using System.Windows.Forms;
 using Sgry.Azuki;
 using Sgry.Azuki.Highlighter;
 using ArduinoAPI;
-using ORCA.Core;
-using ORCA.Core.Macro;
+using ORCA.Runtime;
+using ORCA.Runtime.Macro;
 
 namespace GCController
 {

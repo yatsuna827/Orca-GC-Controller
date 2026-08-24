@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ORCA.Plugin\ORCA.Plugin.csproj" />
+    <ProjectReference Include="..\ArduinoAPI\ArduinoAPI.csproj" />
   </ItemGroup>
 
 </Project>

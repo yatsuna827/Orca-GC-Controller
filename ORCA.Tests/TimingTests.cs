@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using ORCA.Core.Macro;
+using ORCA.Runtime.Macro;
 using Xunit;
 
 namespace ORCA.Tests
