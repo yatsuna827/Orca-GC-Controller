@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using ArduinoAPI;
 using Microsoft.CodeAnalysis.CSharp;
 using ORCA.Core;
-using ORCA.Plugin;
+using ORCA.Runtime;
 using Xunit;
 
 namespace ORCA.Tests
@@ -17,7 +17,7 @@ namespace ORCA.Tests
             """
             global using System.Threading;
             global using ArduinoAPI;
-            global using ORCA.Plugin;
+            global using ORCA.Core;
 
             public class Cmd : MacroCommand
             {

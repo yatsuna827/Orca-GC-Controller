@@ -1,7 +1,7 @@
 ﻿using System.IO.Ports;
 using System.Linq;
 using System.Text;
-using ORCA.Core;
+using ORCA.Runtime;
 
 namespace GCController
 {

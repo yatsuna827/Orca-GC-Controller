@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Threading;
 
-namespace ORCA.Core
+namespace ORCA.Runtime
 {
     static class UtilExtensions
     {

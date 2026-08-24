@@ -1,4 +1,4 @@
-﻿namespace ORCA.Plugin
+﻿namespace ORCA.Core
 {
     public interface IMacroParserContext
     {

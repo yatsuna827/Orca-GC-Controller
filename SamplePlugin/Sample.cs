@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ArduinoAPI;
-using ORCA.Plugin;
+using ORCA.Core;
 using PokemonPRNG.LCG32.StandardLCG;
 
 namespace SamplePlugin

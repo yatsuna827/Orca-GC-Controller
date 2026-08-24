@@ -5,9 +5,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ArduinoAPI;
-using ORCA.Plugin;
+using ORCA.Core;
 
-namespace ORCA.Core.Macro
+namespace ORCA.Runtime.Macro
 {
     public class MacroScript
     {

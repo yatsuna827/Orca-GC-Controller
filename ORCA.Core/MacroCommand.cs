@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using ArduinoAPI;
 
-namespace ORCA.Plugin
+namespace ORCA.Core
 {
     public abstract class MacroCommand
     {

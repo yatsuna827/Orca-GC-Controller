@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using ORCA.Plugin;
+using ORCA.Core;
 
-namespace ORCA.Core
+namespace ORCA.Runtime
 {
     public static class PluginLoader
     {

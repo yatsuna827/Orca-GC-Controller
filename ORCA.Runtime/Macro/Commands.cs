@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using ArduinoAPI;
-using ORCA.Plugin;
+using ORCA.Core;
 
-namespace ORCA.Core.Macro
+namespace ORCA.Runtime.Macro
 {
     class PressCommand : MacroCommand
     {

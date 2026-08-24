@@ -1,5 +1,5 @@
 ﻿using System;
-using ORCA.Core.Macro;
+using ORCA.Runtime.Macro;
 using Xunit;
 
 namespace ORCA.Tests

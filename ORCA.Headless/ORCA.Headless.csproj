@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ORCA.Core\ORCA.Core.csproj" />
+    <ProjectReference Include="..\ORCA.Runtime\ORCA.Runtime.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -56,9 +56,9 @@
       <Name>ArduinoAPI</Name>
       <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
     </ProjectReference>
-    <ProjectReference Include="..\ORCA.Plugin\ORCA.Plugin.csproj">
+    <ProjectReference Include="..\ORCA.Core\ORCA.Core.csproj">
       <Project>{9a1091b7-0106-419f-b072-1c515d22a69c}</Project>
-      <Name>ORCA.Plugin</Name>
+      <Name>ORCA.Core</Name>
       <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
     </ProjectReference>
   </ItemGroup>
