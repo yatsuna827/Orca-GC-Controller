@@ -18,8 +18,13 @@
         void SetTimerStarted(int label);
 
         /// <summary>
-        /// 指定されたlabelのタイマーの{frame}FにHitを計画していることを表明します.
+        /// 指定されたlabelのタイマーの(frame + correct)FにHitを計画していることを表明します.
         /// </summary>
-        void AddHitPlan(int label, int frame);
+        void AddHitPlan(int label, MacroArg frame, MacroArg correct = default);
+
+        /// <summary>
+        /// マクロが受け取る引数を宣言します.
+        /// </summary>
+        void DeclareParameter(string name, int? defaultValue, bool allowsNegative);
     }
 }

@@ -6,6 +6,7 @@ using Xunit;
 namespace ORCA.Tests
 {
     [Trait("Category", "Timing")]
+    [Collection("Timing")]
     public class TimingTests
     {
         private static MacroScript Compile(params string[] lines)
@@ -23,7 +24,7 @@ namespace ORCA.Tests
         {
             var port = await RunOnce(Compile("Start -s=0", "Hit A 30 -d=1"));
 
-            // 30Fは502ms
+            // 30Fを59.7275fpsでmsに換算したら502ms
             Assert.InRange(port.Entries[0].ElapsedMs, 472L, 532L);
         }
 

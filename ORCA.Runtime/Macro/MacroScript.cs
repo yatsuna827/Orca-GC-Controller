@@ -28,6 +28,9 @@ namespace ORCA.Runtime.Macro
 
             public void GetNextHitIndex() => _parent._hitIndex++;
 
+            private readonly IReadOnlyDictionary<string, int> _arguments;
+            public int? GetArgument(string name)
+                => _arguments.TryGetValue(name, out var value) ? value : null as int?;
 
             private readonly Dictionary<string, int> _intContext = new Dictionary<string, int>();
             public int? GetIntContext(string key) => _intContext.ContainsKey(key) ? _intContext[key] : null as int?;
@@ -43,9 +46,10 @@ namespace ORCA.Runtime.Macro
 
             private readonly MacroScript _parent;
             private readonly Stopwatch _waitTimer = new Stopwatch();
-            public Context(MacroScript parent)
+            public Context(MacroScript parent, IReadOnlyDictionary<string, int> arguments)
             {
                 _parent = parent;
+                _arguments = arguments;
             }
         }
 
@@ -86,16 +90,22 @@ namespace ORCA.Runtime.Macro
 
             if (commands.Count == 0) throw new Exception("有効なコマンドがありませんでした");
 
-            var macro = new MacroScript(commands, context.GetHitPlan());
+            var macro = new MacroScript(commands, context.GetHitPlan(), context.GetParameters());
 
             return macro;
         }
 
-        private MacroScript(IEnumerable<(int Line, MacroCommand Command)> commands, (int, int)[] hitPlan)
+        private MacroScript(
+            IEnumerable<(int Line, MacroCommand Command)> commands,
+            (int, MacroArg, MacroArg)[] hitPlan,
+            MacroParameter[] parameters)
         {
             this._commands = commands.Select((_, i) => (i, _.Line, _.Command));
             this._hitPlan = hitPlan;
+            this.Parameters = parameters;
         }
+
+        public IReadOnlyList<MacroParameter> Parameters { get; }
 
         private readonly IEnumerable<(int Index, int Line, MacroCommand Command)> _commands;
         private readonly Stopwatch[] frameTimers = Enumerable.Range(0, 10).Select(_ => new Stopwatch()).ToArray();
@@ -113,22 +123,52 @@ namespace ORCA.Runtime.Macro
         // Startされる前や全Hit消化後はnullが返る
         public int? GetRemainingFrame()
         {
-            if (_hitIndex < 0 || _hitIndex >= _hitPlan.Length) return null;
+            var hitPlan = _resolvedHitPlan;
+            if (hitPlan is null || _hitIndex < 0 || _hitIndex >= hitPlan.Length) return null;
 
-            var (label, frame) = _hitPlan[_hitIndex];
+            var (label, frame) = hitPlan[_hitIndex];
             var remain = frame - (int)(frameTimers[label].ElapsedMilliseconds * 59.7275 / 1000);
 
             return remain;
         }
         private int _hitIndex = -1;
-        private readonly (int Label, int Frame)[] _hitPlan;
+        private readonly (int Label, MacroArg Frame, MacroArg Correct)[] _hitPlan;
 
-        public Task RunOnceAsync(IWritable port, CancellationToken token)
+        private (int Label, int Frame)[] _resolvedHitPlan;
+
+        private Context CreateContext(IReadOnlyDictionary<string, int> arguments)
         {
+            var resolved = new Dictionary<string, int>();
+            foreach (var parameter in Parameters)
+            {
+                int value;
+                if (arguments != null && arguments.TryGetValue(parameter.Name, out var passed))
+                    value = passed;
+                else if (parameter.DefaultValue.HasValue)
+                    value = parameter.DefaultValue.Value;
+                else
+                    throw new ArgumentException($"パラメータ{{{parameter.Name}}}に値が指定されていません", nameof(arguments));
+
+                if (!parameter.AllowsNegative && value < 0)
+                    throw new ArgumentException($"パラメータ{{{parameter.Name}}}は負でない数値である必要があります", nameof(arguments));
+
+                resolved[parameter.Name] = value;
+            }
+
+            var context = new Context(this, resolved);
+            _resolvedHitPlan = _hitPlan
+                .Select(_ => (_.Label, Frame: HitCommand.ResolveFrame(_.Frame, _.Correct, context)))
+                .ToArray();
+
+            return context;
+        }
+
+        public Task RunOnceAsync(IWritable port, CancellationToken token, IReadOnlyDictionary<string, int> arguments = null)
+        {
+            var context = CreateContext(arguments);
+
             return Task.Run(() =>
             {
-                var context = new Context(this);
-
                 _hitIndex = -1;
                 foreach (var (i, line, command) in _commands)
                 {
@@ -141,12 +181,12 @@ namespace ORCA.Runtime.Macro
             }, token);
         }
 
-        public Task RunLoopAsync(IWritable port, CancellationToken token, int times = -1)
+        public Task RunLoopAsync(IWritable port, CancellationToken token, int times = -1, IReadOnlyDictionary<string, int> arguments = null)
         {
+            var context = CreateContext(arguments);
+
             return Task.Run(() =>
             {
-                var context = new Context(this);
-
                 _hitIndex = -1;
                 CurrentLoopIndex = times >= 0 ? 0 : -1;
                 while (!token.IsCancellationRequested)
