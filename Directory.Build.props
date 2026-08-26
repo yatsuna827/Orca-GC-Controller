@@ -1,0 +1,8 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Releaseビルドではpdbを出力しない -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+  </PropertyGroup>
+
+</Project>
