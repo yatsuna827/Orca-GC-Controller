@@ -6,7 +6,7 @@ namespace ORCA.Headless.Tests
     public class MacroHistoryTests
     {
         private static MacroHistory.Entry MakeEntry(string label, bool dryRun = false)
-            => new(label, dryRun, MacroScript.Compile(["Press A -d=10"], MacroScript.GetDefaultParsers()), ["Press A -d=10"]);
+            => new(label, dryRun, MacroScript.Compile(["Press A -d=10"], MacroScript.GetDefaultParsers()), ["Press A -d=10"], []);
 
         [Fact]
         public void Rememberしたエントリが履歴に追加されること()
@@ -36,34 +36,16 @@ namespace ORCA.Headless.Tests
         }
 
         [Fact]
-        public void 実行したエントリと同じラベルでDryRunするとそれぞれ別の履歴として扱われること()
+        public void 同じエントリを複数回Rememberするとそれぞれ別の実行として履歴に追加されること()
         {
             var history = new MacroHistory();
-            var entry1 = MakeEntry("a.txt", dryRun: false);
-            var entry2 = MakeEntry("a.txt", dryRun: true);
+            var entry = MakeEntry("a.txt");
 
-            history.Remember(entry1);
-            history.Remember(entry2);
+            history.Remember(entry);
 
             Assert.Equal(2, history.Count);
-            Assert.Equal(entry2, history[0]);
-            Assert.Equal(entry1, history[1]);
-        }
-
-        [Fact]
-        public void 履歴にあるエントリと同一のエントリをRememberすると先頭に積み直されること()
-        {
-            var history = new MacroHistory();
-            var entryA = MakeEntry("a.txt");
-            var entryB = MakeEntry("b.txt");
-
-            history.Remember(entryA);
-            history.Remember(entryB);
-            history.Remember(entryA);
-
-            Assert.Equal(2, history.Count);
-            Assert.Equal(entryA, history[0]);
-            Assert.Equal(entryB, history[1]);
+            Assert.Equal(entry, history[0]);
+            Assert.Equal(entry, history[1]);
         }
 
         [Fact]
@@ -77,33 +59,6 @@ namespace ORCA.Headless.Tests
             Assert.Equal(10, history.Count);
             for (var i = 0; i < 10; i++)
                 Assert.DoesNotContain("oldest.txt", history[i].Label);
-        }
-
-        [Fact]
-        public void Entryの同一性_LabelとDryRunが同じEntryは同一()
-        {
-            var a = MakeEntry("a.txt", dryRun: false);
-            var b = MakeEntry("a.txt", dryRun: false);
-
-            Assert.Equal(a, b);
-        }
-        
-        [Fact]
-        public void Entryの同一性_Labelが異なれば同一でない()
-        {
-            var a = MakeEntry("a.txt", dryRun: true);
-            var b = MakeEntry("b.txt", dryRun: true);
-
-            Assert.NotEqual(a, b);
-        }
-
-        [Fact]
-        public void Entryの同一性_Labelが同じでもDryRunが異なれば同一でない()
-        {
-            var a = MakeEntry("a.txt", dryRun: false);
-            var b = MakeEntry("a.txt", dryRun: true);
-
-            Assert.NotEqual(a, b);
         }
     }
 }

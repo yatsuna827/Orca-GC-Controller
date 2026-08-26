@@ -182,11 +182,13 @@ namespace ORCA.Headless
                 if (HasRunningMacro) return Response.Fail("macro already running");
                 if (body is null) return Response.Fail("usage: run <path> [--loop [count]]");
 
-                var sourceLines = body.Replace("\r\n", "\n").Split(['\n', '\r']);
-                var entry = new MacroHistory.Entry(args.Length > 0 ? args[0] : "(unnamed)", dryRun, MacroScript.Compile(sourceLines, _parsers), sourceLines);
+                if (!TryParseArguments(args, out var arguments, out var error)) return Response.Fail(error);
 
-                _history.Remember(entry);
+                var sourceLines = body.Replace("\r\n", "\n").Split(['\n', '\r']);
+                var entry = new MacroHistory.Entry(args.Length > 0 ? args[0] : "(unnamed)", dryRun, MacroScript.Compile(sourceLines, _parsers), sourceLines, arguments);
+
                 running = StartMacro(entry, dryRun, ParseLoop(args), clientGone);
+                _history.Remember(entry);
             }
 
             return WaitForMacro(running, onProgress);
@@ -209,12 +211,19 @@ namespace ORCA.Headless
                 if (index < 1 || index > _history.Count)
                     return Response.Fail($"only {_history.Count} entries in history");
 
-                var entry = _history[index - 1];
-                var dryRun = !args.Contains("--no-dry-run") && (args.Contains("--dry-run") || entry.DryRun);
+                var previous = _history[index - 1];
+                var dryRun = !args.Contains("--no-dry-run") && (args.Contains("--dry-run") || previous.DryRun);
                 if (!dryRun && (_port is null || !_port.IsOpen)) return Response.Fail("not connected");
 
-                _history.Remember(entry);
+                if (!TryParseArguments(args, out var overrides, out var error)) return Response.Fail(error);
+
+                // 前回の実行時の引数をベースに、指定された引数だけ上書きする
+                var arguments = new Dictionary<string, int>(previous.Arguments);
+                foreach (var (name, value) in overrides) arguments[name] = value;
+                var entry = previous with { DryRun = dryRun, Arguments = arguments };
+
                 running = StartMacro(entry, dryRun, ParseLoop(args), clientGone);
+                _history.Remember(entry);
             }
 
             return WaitForMacro(running, onProgress);
@@ -227,8 +236,8 @@ namespace ORCA.Headless
             var cts = CancellationTokenSource.CreateLinkedTokenSource(clientGone);
             var port = dryRun ? new NullPort() : _port;
             var task = loop.HasValue
-                ? entry.Script.RunLoopAsync(port, cts.Token, loop.Value)
-                : entry.Script.RunOnceAsync(port, cts.Token);
+                ? entry.Script.RunLoopAsync(port, cts.Token, loop.Value, entry.Arguments)
+                : entry.Script.RunOnceAsync(port, cts.Token, entry.Arguments);
 
             return _running = new Running(entry, port, task, cts);
         }
@@ -280,6 +289,44 @@ namespace ORCA.Headless
                 running.Port.SetButtonState(ControllerInput.KeysAllUp);
         }
 
+        private static bool TryParseArguments(string[] args, out Dictionary<string, int> arguments, out string error)
+        {
+            arguments = [];
+            error = null;
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (args[i] != "--arg") continue;
+                if (++i >= args.Length)
+                {
+                    error = "usage: --arg <name>=<value>";
+                    return false;
+                }
+
+                var text = args[i];
+                var separator = text.IndexOf('=');
+                if (separator <= 0)
+                {
+                    error = $"invalid argument: {text} (expected <name>=<value>)";
+                    return false;
+                }
+
+                var name = text[..separator];
+                if (!int.TryParse(text[(separator + 1)..], out var value))
+                {
+                    error = $"invalid argument value: {text}";
+                    return false;
+                }
+                if (!arguments.TryAdd(name, value))
+                {
+                    error = $"duplicated argument: {name}";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private static int? ParseLoop(string[] args)
         {
             var i = Array.IndexOf(args, "--loop");
@@ -296,11 +343,7 @@ namespace ORCA.Headless
         private const int Limit = 10;
         private readonly List<Entry> _entries = [];
 
-        public sealed record Entry(string Label, bool DryRun, MacroScript Script, string[] SourceLines)
-        {
-            public bool Equals(Entry other) => other is not null && Label == other.Label && DryRun == other.DryRun;
-            public override int GetHashCode() => HashCode.Combine(Label, DryRun);
-        }
+        public sealed record Entry(string Label, bool DryRun, MacroScript Script, string[] SourceLines, Dictionary<string, int> Arguments);
 
         public int Count => _entries.Count;
         public Entry this[int index] => _entries[index];
@@ -308,7 +351,6 @@ namespace ORCA.Headless
 
         public void Remember(Entry entry)
         {
-            _entries.Remove(entry);
             _entries.Insert(0, entry);
             if (_entries.Count > Limit) _entries.RemoveAt(_entries.Count - 1);
         }

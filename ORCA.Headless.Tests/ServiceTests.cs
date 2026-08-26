@@ -290,7 +290,7 @@ namespace ORCA.Headless.Tests
 
             Assert.True(response.Ok);
             Assert.Equal(["80 81 80", "80 80 80", "80 82 80", "80 80 80", "80 81 80", "80 80 80"], _port.HexLines);
-            Assert.Equal(["1: a.txt", "2: b.txt"], Do(service, "history").Lines);
+            Assert.Equal(["1: a.txt", "2: b.txt", "3: a.txt"], Do(service, "history").Lines);
         }
 
         [Fact]
@@ -337,6 +337,93 @@ namespace ORCA.Headless.Tests
             cts.Cancel();
             var response = await running;
             Assert.Contains("macro cancelled", response.Lines);
+        }
+
+        [Fact]
+        public void runコマンド_argオプションで渡した値がマクロに渡されること()
+        {
+            var service = NewService();
+            Do(service, "connect", "COM_TEST");
+
+            var missing = service.Handle(new Request("run", ["macro.txt"], "Wait {d}"), clientGone: TestContext.Current.CancellationToken);
+            Assert.False(missing.Ok);
+            Assert.Contains("パラメータ{d}に値が指定されていません", missing.Lines[0]);
+
+            Assert.True(service.Handle(new Request("run", ["macro.txt", "--arg", "d=0"], "Wait {d}"), clientGone: TestContext.Current.CancellationToken).Ok);
+        }
+
+        [Fact]
+        public void runコマンド_負の値にできないパラメータに負の値が渡された場合はコマンドを拒否すること()
+        {
+            var service = NewService();
+            Do(service, "connect", "COM_TEST");
+
+            var response = service.Handle(new Request("run", ["macro.txt", "--arg", "d=-5"], "Press A -d={d}"), clientGone: TestContext.Current.CancellationToken);
+
+            Assert.False(response.Ok);
+            Assert.Contains("パラメータ{d}は負でない数値である必要があります", response.Lines[0]);
+        }
+
+        [Fact]
+        public void runコマンド_マクロで使われていない名前の引数が渡された場合はコマンドを拒否すること()
+        {
+            var service = NewService();
+            Do(service, "connect", "COM_TEST");
+
+            var response = service.Handle(new Request("run", ["macro.txt", "--arg", "dd=10"], "Press A -d={d:10}"), clientGone: TestContext.Current.CancellationToken);
+
+            Assert.False(response.Ok);
+            Assert.Contains("パラメータ{dd}はマクロで使われていません", response.Lines[0]);
+        }
+
+        [Fact]
+        public void runコマンド_同じ名前の引数が複数回指定された場合はコマンドを拒否すること()
+        {
+            var service = NewService();
+            Do(service, "connect", "COM_TEST");
+
+            var response = service.Handle(new Request("run", ["macro.txt", "--arg", "d=1", "--arg", "d=2"], "Wait {d}"), clientGone: TestContext.Current.CancellationToken);
+
+            Assert.False(response.Ok);
+            Assert.Contains("duplicated argument: d", response.Lines[0]);
+        }
+
+        [Fact]
+        public void runコマンド_argの書式不正()
+        {
+            var service = NewService();
+            Do(service, "connect", "COM_TEST");
+
+            Assert.Contains("invalid argument: d", service.Handle(new Request("run", ["macro.txt", "--arg", "d"], "Wait {d}"), clientGone: TestContext.Current.CancellationToken).Lines[0]);
+            Assert.Contains("invalid argument value: d=x", service.Handle(new Request("run", ["macro.txt", "--arg", "d=x"], "Wait {d}"), clientGone: TestContext.Current.CancellationToken).Lines[0]);
+            Assert.Contains("usage: --arg", service.Handle(new Request("run", ["macro.txt", "--arg"], "Wait {d}"), clientGone: TestContext.Current.CancellationToken).Lines[0]);
+        }
+
+        [Fact]
+        public void runコマンド_引数の解決に失敗した実行は履歴に積まれないこと()
+        {
+            var service = NewService();
+            Do(service, "connect", "COM_TEST");
+
+            var response = service.Handle(new Request("run", ["macro.txt"], "Wait {d}"), clientGone: TestContext.Current.CancellationToken);
+
+            Assert.False(response.Ok);
+            Assert.Contains("no history", Do(service, "history").Lines);
+        }
+
+        [Fact]
+        public void rerunコマンド_前回渡された引数をベースに_指定された引数だけ値を上書きして実行すること()
+        {
+            var service = NewService();
+            Do(service, "connect", "COM_TEST");
+            const string macro = "Wait {a}\nPress A -d={b}";
+            service.Handle(new Request("run", ["macro.txt", "--arg", "a=0", "--arg", "b=1"], macro), clientGone: TestContext.Current.CancellationToken);
+
+            Assert.True(Do(service, "rerun", "--arg", "b=2").Ok);
+
+            var response = Do(service, "rerun", "--arg", "b=-1");
+            Assert.False(response.Ok);
+            Assert.Contains("パラメータ{b}は負でない数値である必要があります", response.Lines[0]);
         }
 
         [Fact]
@@ -732,7 +819,7 @@ namespace ORCA.Headless.Tests
             Assert.True(port.WaitForCall(TestContext.Current.CancellationToken), "connectが始まらなかった");
 
             // connectがgateを持っている間に、runとshutdownをgate待ちに並ばせる
-            var running = Task.Run(() => service.Handle(new Request("run", ["a.txt", "--dry-run"], "Press A -d=5000")));
+            var running = Task.Run(() => service.Handle(new Request("run", ["a.txt", "--dry-run"], "Press A -d=5000"), clientGone: TestContext.Current.CancellationToken));
             var shuttingDown = Task.Run(() => Do(service, "shutdown"));
             Assert.True(SpinWait.SpinUntil(() => !Do(service, "status").Ok, 5000), "shutdownが始まらなかった");
 

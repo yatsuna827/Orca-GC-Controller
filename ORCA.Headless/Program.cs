@@ -14,8 +14,8 @@ namespace ORCA.Headless
               connect [port] [--no-rts] [--no-dtr]      connect to a port
               disconnect                                disconnect the port
               set-port <port>                            set the default port
-              run <path> [--loop [count]] [--dry-run]   run a macro; Ctrl+C to cancel
-              rerun [number] [--loop [count]] [--no-dry-run] rerun from history; defaults to the last one
+              run <path> [--loop [count]] [--dry-run] [--arg <name>=<value>]...  run a macro; Ctrl+C to cancel
+              rerun [number] [--loop [count]] [--no-dry-run] [--arg <name>=<value>]... rerun from history; defaults to the last one
               status                                    show macro status
               history                                   list macro history
               shutdown                                  stop the service

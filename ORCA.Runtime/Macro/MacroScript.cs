@@ -136,9 +136,14 @@ namespace ORCA.Runtime.Macro
 
         private (int Label, int Frame)[] _resolvedHitPlan;
 
+        private static string Format(IEnumerable<string> names)
+            => string.Join(", ", names.Select(_ => $"{{{_}}}"));
+
         private Context CreateContext(IReadOnlyDictionary<string, int> arguments)
         {
             var resolved = new Dictionary<string, int>();
+            var missing = new List<string>();
+            var negative = new List<string>();
             foreach (var parameter in Parameters)
             {
                 int value;
@@ -147,13 +152,31 @@ namespace ORCA.Runtime.Macro
                 else if (parameter.DefaultValue.HasValue)
                     value = parameter.DefaultValue.Value;
                 else
-                    throw new ArgumentException($"パラメータ{{{parameter.Name}}}に値が指定されていません", nameof(arguments));
+                {
+                    missing.Add(parameter.Name);
+                    continue;
+                }
 
                 if (!parameter.AllowsNegative && value < 0)
-                    throw new ArgumentException($"パラメータ{{{parameter.Name}}}は負でない数値である必要があります", nameof(arguments));
+                {
+                    negative.Add(parameter.Name);
+                    continue;
+                }
 
                 resolved[parameter.Name] = value;
             }
+
+            var declared = new HashSet<string>(Parameters.Select(_ => _.Name));
+            var unknown = arguments is null
+                ? new List<string>()
+                : arguments.Keys.Where(_ => !declared.Contains(_)).ToList();
+
+            var errors = new List<string>();
+            if (missing.Count > 0) errors.Add($"パラメータ{Format(missing)}に値が指定されていません");
+            if (negative.Count > 0) errors.Add($"パラメータ{Format(negative)}は負でない数値である必要があります");
+            if (unknown.Count > 0) errors.Add($"パラメータ{Format(unknown)}はマクロで使われていません");
+            // NOTE: ArgumentExceptionにparamNameを渡すと、メッセージ末尾に(Parameter '...')が表示されてしまうため、渡してはいけない
+            if (errors.Count > 0) throw new ArgumentException(string.Join("; ", errors));
 
             var context = new Context(this, resolved);
             _resolvedHitPlan = _hitPlan

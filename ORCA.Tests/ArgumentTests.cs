@@ -106,7 +106,37 @@ namespace ORCA.Tests
                 _ = script.RunOnceAsync(port, CancellationToken.None);
             });
 
-            Assert.StartsWith("パラメータ{d}に値が指定されていません", ex.Message);
+            Assert.Equal("パラメータ{d}に値が指定されていません", ex.Message);
+            Assert.Null(ex.ParamName);
+            Assert.Empty(port.Entries);
+        }
+
+        [Fact]
+        public void 値が指定されていないパラメータが複数あればまとめて出力されること()
+        {
+            var script = Compile("Wait {a}", "Press A -d={b}");
+            var port = new RecordingPort();
+
+            var ex = Assert.Throws<ArgumentException>(() =>
+            {
+                _ = script.RunOnceAsync(port, CancellationToken.None);
+            });
+
+            Assert.Equal("パラメータ{a}, {b}に値が指定されていません", ex.Message);
+        }
+
+        [Fact]
+        public void マクロで使われていない名前の引数を渡すと実行しようとしたときに例外になること()
+        {
+            var script = Compile("Wait {d:0}");
+            var port = new RecordingPort();
+
+            var ex = Assert.Throws<ArgumentException>(() =>
+            {
+                _ = script.RunOnceAsync(port, CancellationToken.None, new Dictionary<string, int> { ["dd"] = 1 });
+            });
+
+            Assert.Equal("パラメータ{dd}はマクロで使われていません", ex.Message);
             Assert.Empty(port.Entries);
         }
 
