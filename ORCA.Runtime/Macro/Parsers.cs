@@ -56,18 +56,18 @@ namespace ORCA.Runtime.Macro
             }
 
             // Duration
-            var duration = 200;
+            MacroArg duration = 200;
             if (options['d'] != "")
             {
-                if (!int.TryParse(options['d'], out duration) || duration < 0)
+                if (!MacroArg.TryParse(options['d'], context, out duration))
                     return ReturnError(context.CurrentLine, "-dオプションは32bit符号あり整数に収まる負でない数値である必要があります", out errorMessage);
             }
 
             // Interval
-            var interval = 0;
+            MacroArg interval = 0;
             if (options['i'] != "")
             {
-                if (!int.TryParse(options['i'], out interval) || interval < 0)
+                if (!MacroArg.TryParse(options['i'], context, out interval))
                     return ReturnError(context.CurrentLine, "-iオプションは32bit符号あり整数に収まる負でない数値である必要があります", out errorMessage);
             }
 
@@ -103,7 +103,7 @@ namespace ORCA.Runtime.Macro
                 return ReturnError(context.CurrentLine, "引数の数が不正です", out errorMessage);
 
             // 第1引数はボタン系列指定.
-            if (!int.TryParse(args[0], out var duration) || duration < 0)
+            if (!MacroArg.TryParse(args[0], context, out var duration))
                 return ReturnError(context.CurrentLine, "第1引数(待機時間[ms]指定)は32bit符号あり整数に収まる負でない数値である必要があります", out errorMessage);
 
             errorMessage = "";
@@ -168,7 +168,7 @@ namespace ORCA.Runtime.Macro
             var button = buttonMap[args[0]];
 
             // 第2引数はフレーム.
-            if (!int.TryParse(args[1], out var frame) || frame < 0)
+            if (!MacroArg.TryParse(args[1], context, out var frame))
                 return ReturnError(context.CurrentLine, "第2引数(フレーム指定)は32bit符号あり整数に収まる負でない数値である必要があります", out errorMessage);
 
             // 許可されているオプション引数は-l, -d, -s, -c
@@ -185,10 +185,10 @@ namespace ORCA.Runtime.Macro
             }
 
             // Duration
-            var duration = 200;
+            MacroArg duration = 200;
             if (options['d'] != "")
             {
-                if (!int.TryParse(options['d'], out duration) || duration < 0)
+                if (!MacroArg.TryParse(options['d'], context, out duration))
                     return ReturnError(context.CurrentLine, "-dオプションは32bit符号あり整数に収まる負でない数値である必要があります", out errorMessage);
             }
 
@@ -204,13 +204,11 @@ namespace ORCA.Runtime.Macro
                 return ReturnError(context.CurrentLine, $"タイマー[{label}] Hitコマンドはタイマー起動より後に書かれる必要があります", out errorMessage);
 
             // Correct
+            MacroArg correct = 0;
             if (options['c'] != "")
             {
-                if (!int.TryParse(options['c'], out int correct))
+                if (!MacroArg.TryParse(options['c'], context, out correct, allowNegative: true))
                     return ReturnError(context.CurrentLine, "-cオプションは32bit符号あり整数に収まる数値である必要があります", out errorMessage);
-
-                frame += correct;
-                if (frame < 0) frame = 0;
             }
 
             // StartTimer
@@ -227,10 +225,10 @@ namespace ORCA.Runtime.Macro
                 context.SetTimerStarted(startLabel);
             }
 
-            context.AddHitPlan(label, frame);
+            context.AddHitPlan(label, frame, correct);
 
             errorMessage = "";
-            return new HitCommand(button, frame, label, duration, startLabel);
+            return new HitCommand(button, frame, correct, label, duration, startLabel);
         }
     }
 }

@@ -21,8 +21,8 @@ orca daemon [--port <シリアルポート名>]
 | `orca connect [port] [--no-rts] [--no-dtr] [--json]` | シリアルポートに接続 |
 | `orca disconnect [--json]` | 接続を切断 |
 | `orca set-port <port> [--json]` | デフォルトポートを設定 |
-| `orca run <path> [--loop [count]] [--dry-run] [--json] [--quiet]` | マクロファイルを実行 |
-| `orca rerun [number] [--loop [count]] [--no-dry-run] [--json] [--quiet]` | 履歴からマクロを再実行 |
+| `orca run <path> [--loop [count]] [--dry-run] [--arg <name>=<value>]... [--json] [--quiet]` | マクロファイルを実行 |
+| `orca rerun [number] [--loop [count]] [--no-dry-run] [--arg <name>=<value>]... [--json] [--quiet]` | 履歴からマクロを再実行 |
 | `orca status [--json]` | マクロの実行状態を表示 |
 | `orca history [--json]` | マクロ実行履歴を表示 |
 | `orca shutdown [--json]` | デーモンを停止 |
@@ -33,6 +33,25 @@ orca daemon [--port <シリアルポート名>]
 - `--quiet`: 実行中の進捗表示を抑制します。
 - `--dry-run`: ポートに接続せず、マクロの動作だけ確認します。
 - `--loop [count]`: マクロをループ実行します。countを省略すると無限ループになります。
+- `--arg <name>=<value>`: マクロのプレースホルダに値を渡します。複数指定する場合は `--arg` を繰り返します。
+
+### マクロへの引数の渡し方
+
+マクロの中のプレースホルダ（`{name}`）に値を渡すには `--arg` を使います。
+
+```bash
+orca run macro.txt --arg frame=1234 --arg correct=-3
+```
+
+デフォルト値を持たないプレースホルダに値が渡されなかった場合はエラーとしてマクロ実行が拒否されます。
+また、マクロに存在しない引数名を指定した場合も、エラーとして拒否されます。
+
+`rerun` では、実行時に渡された引数をベースに、指定された引数だけを上書きして実行できます。
+
+```bash
+orca run macro.txt --arg frame=1234 --arg correct=-3
+orca rerun --arg frame=1240      # frame=1240, correct=-3
+```
 
 ### 使用例
 

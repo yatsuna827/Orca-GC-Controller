@@ -10,6 +10,8 @@ namespace ORCA.Core
         bool Wait(int label, int duration, in CancellationToken token, bool withRestart = true);
         void GetNextHitIndex();
 
+        int? GetArgument(string name);
+
         /// <summary>
         /// コマンド間で保持される変数です.
         /// </summary>
