@@ -22,7 +22,6 @@ ExportedObj/
 
 # マニフェスト
 *.pfx
-*.manifest
  
 # ログファイル
 Logs/
