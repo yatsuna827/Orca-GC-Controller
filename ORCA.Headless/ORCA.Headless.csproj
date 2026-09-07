@@ -5,6 +5,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <AssemblyName>orca</AssemblyName>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Version>1.0.0</Version>
     <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
