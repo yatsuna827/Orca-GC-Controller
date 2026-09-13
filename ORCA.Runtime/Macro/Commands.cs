@@ -92,7 +92,7 @@ namespace ORCA.Runtime.Macro
 
         public override void Execute(IWritable port, in CancellationToken token, IMacroContext context)
         {
-            var border = (int)(ResolveFrame(_frame, _correct, context) * 1000 / 59.7275);
+            var border = (int)(ResolveFrame(_frame, _correct, context) * 1000 / Constants.FPS);
 
             if (context.Wait(_label, border, token, false)) return;
             context.GetNextHitIndex();
