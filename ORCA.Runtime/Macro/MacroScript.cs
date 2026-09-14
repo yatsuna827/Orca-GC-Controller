@@ -127,7 +127,7 @@ namespace ORCA.Runtime.Macro
             if (hitPlan is null || _hitIndex < 0 || _hitIndex >= hitPlan.Length) return null;
 
             var (label, frame) = hitPlan[_hitIndex];
-            var remain = frame - (int)(frameTimers[label].ElapsedMilliseconds * 59.7275 / 1000);
+            var remain = frame - (int)(frameTimers[label].ElapsedMilliseconds * Constants.FPS / 1000);
 
             return remain;
         }

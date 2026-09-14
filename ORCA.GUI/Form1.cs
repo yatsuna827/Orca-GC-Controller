@@ -73,7 +73,7 @@ namespace GCController
         private bool connecting;
         private void ConnectButton_Click(object sender, EventArgs e)
         {
-            if(!Program.IsDebug && !portsNameBox.Enabled) return;
+            if (!Program.IsDebug && !portsNameBox.Enabled) return;
 
             if (connecting)
             {
@@ -225,7 +225,7 @@ namespace GCController
                 runButton.Enabled = true;
                 logBox.AppendText("コンパイルに成功しました\r\n");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logBox.AppendText("Compile Error " + ex.Message + Environment.NewLine);
             }
@@ -285,7 +285,7 @@ namespace GCController
                 var loop = macroScript.CurrentLoopIndex;
                 this.Text = "Orca GC Controller"
                     + (index != -1 ? $" ({index + 1}行目 実行中)" : "")
-                    + (loop != -1 ? $" ({loop+1}回目)" : "");
+                    + (loop != -1 ? $" ({loop + 1}回目)" : "");
             }
 
             // 待機時間の更新
@@ -326,7 +326,7 @@ namespace GCController
 
         private void 開くToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (var ofd = new OpenFileDialog() 
+            using (var ofd = new OpenFileDialog()
             {
                 Filter = "テキストファイル(*.txt)|*.txt|すべてのファイル(*.*)|*.*",
                 Title = "開くファイルを選択してください"
@@ -359,7 +359,7 @@ namespace GCController
 
         private void 上書き保存ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!File.Exists(currentFilePath)) 
+            if (!File.Exists(currentFilePath))
                 名前を付けて保存ToolStripMenuItem_Click(sender, e);
             else
                 File.WriteAllText(currentFilePath, scriptBox.Text);
